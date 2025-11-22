@@ -3,85 +3,117 @@ import os
 
 class DataProcessor:
     """
-    Responsável por carregar, limpar, filtrar e salvar o dataset musical.
+    Processador de Dados ETL.
+    Gera dois tipos de artefatos:
+    Full Dataset: Todas as músicas limpas com os metadados necessarios
+    Graph Dataset: Amostra balanceada (para construção eficiente do grafo).
     """
 
-    def __init__(self, input_path: str, output_path: str):
+    def __init__(self, input_path: str, output_dir: str):
         self.input_path = input_path
-        self.output_path = output_path
+        self.output_dir = output_dir
         
-        # Isso evita carregar 120 mil músicas
-        self.TARGET_GENRES = [
-            'pop', 'rock', 'metal', 'classical', 
-            'acoustic', 'piano', 'dance', 'brazil'
-        ]
-        
-        # Quantas músicas por gênero
-        self.SAMPLES_PER_GENRE = 300
-
-    def process(self):
-        
-        print(f"--- [ETL] Iniciando processamento ---")
-        
-        # Validação
-        if not os.path.exists(self.input_path):
-            raise FileNotFoundError(f"Arquivo não encontrado: {self.input_path}")
-
-        # Carregamento
-        print("-> Carregando dataset bruto...")
-        try:
-            df = pd.read_csv(self.input_path)
-        except Exception as e:
-            raise Exception(f"Erro ao ler CSV: {e}")
-
-        # Filtragem e Amostragem
-        df_final = pd.DataFrame()
-        
-        # Verifica nome da coluna de gênero (segurança)
-        col_genre = 'track_genre' if 'track_genre' in df.columns else 'genre'
-
-        print("-> Filtrando gêneros e balanceando dados...")
-        for genre in self.TARGET_GENRES:
-            # Filtra apenas o gênero atual
-            df_genre = df[df[col_genre] == genre]
-            
-            # Pega uma amostra aleatória se houver dados suficientes
-            if len(df_genre) >= self.SAMPLES_PER_GENRE:
-                df_genre = df_genre.sample(n=self.SAMPLES_PER_GENRE, random_state=42)
-            
-            df_final = pd.concat([df_final, df_genre])
-
-        # Limpeza e Renomeação
-        column_mapping = {
+        # Mapeamento
+        self.COLUMN_MAPPING = {
             'track_id': 'id',
             'track_name': 'name',
             'artists': 'artist',
             'track_genre': 'genre',
-            'tempo': 'bpm',  # Você pediu como BPM
+            'tempo': 'bpm',
             'danceability': 'danceability',
             'energy': 'energy',
             'valence': 'valence',
             'acousticness': 'acousticness',
             'instrumentalness': 'instrumentalness'
         }
-
-        # Renomeia
-        df_final = df_final.rename(columns=column_mapping)
-
-        # Seleciona APENAS as colunas desejadas
-        cols_to_keep = list(column_mapping.values())
         
-        # Garante que só tentamos acessar colunas que existem após renomear
-        df_final = df_final[[c for c in cols_to_keep if c in df_final.columns]]
+        # Colunas essenciais que não podem ser nulas
+        self.REQUIRED_COLS = list(self.COLUMN_MAPPING.values())
 
-        # Remove duplicatas e valores nulos
-        df_final = df_final.drop_duplicates(subset='id').dropna()
+    def _load_and_standardize(self):
+        """
+        [MÉTODO INTERNO] 
+        Carrega o Raw, renomeia colunas e remove nulos/duplicatas.
+        Não aplica filtros de gênero nem amostragem.
+        """
+        if not os.path.exists(self.input_path):
+            raise FileNotFoundError(f"Arquivo raw não encontrado: {self.input_path}")
 
-        # Salvamento
-        os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
+        print("   -> Lendo CSV bruto...")
         
-        df_final.to_csv(self.output_path, index=False)
+        df = pd.read_csv(self.input_path, low_memory=False)
         
-        print(f"-> Dataset limpo salvo em: {self.output_path}")
-        print(f"-> Total de músicas processadas: {len(df_final)}")
-        print("--- [ETL] Concluído com sucesso ---")
+        # Ajuste de nomes de colunas
+        if 'genre' in df.columns and 'track_genre' not in df.columns:
+            df.rename(columns={'genre': 'track_genre'}, inplace=True)
+
+        # 2Renomear para o padrão
+        df.rename(columns=self.COLUMN_MAPPING, inplace=True)
+
+        # Filtra apenas as colunas que existem no DF após renomear
+        cols_to_keep = [c for c in self.REQUIRED_COLS if c in df.columns]
+        df = df[cols_to_keep]
+
+        # Limpeza Pesada
+        initial_len = len(df)
+        df = df.dropna() # Remove linhas com qualquer dado faltando
+        df = df.drop_duplicates(subset='id') # Garante IDs únicos
+        
+        print(f"   -> Limpeza: {initial_len} linhas -> {len(df)} linhas válidas.")
+        return df
+
+    def process_full_dataset(self, filename='songs_full.csv'):
+        """
+        Processa e salva TODO o dataset limpo.
+        """
+        print(f"\n[ETL] Gerando Dataset COMPLETO ({filename})...")
+        
+        df = self._load_and_standardize()
+        
+        # Salvar
+        os.makedirs(self.output_dir, exist_ok=True)
+        full_path = os.path.join(self.output_dir, filename)
+        df.to_csv(full_path, index=False)
+        
+        print(f"   ✔ Arquivo Mestre salvo em: {full_path}")
+        return full_path
+
+    def process_graph_dataset(self, filename='songs.csv', samples_per_genre=800):
+        """
+        Processa e salva apenas uma AMOSTRA balanceada.
+        Por padrão usa 800 por genero
+        """
+        print(f"\n[ETL] Gerando Dataset para GRAFO ({filename})...")
+        
+        df = self._load_and_standardize()
+        
+        # Lógica de Amostragem
+        target_genres = target_genres = [
+            'pop', 'rock', 'metal', 'classical', 'acoustic', 
+            'piano', 'dance', 'brazil', 'jazz', 'hip-hop', 
+            'electronic', 'reggae'
+        ]
+        df_final = pd.DataFrame()
+        
+        print(f"   -> Filtrando gêneros alvo e coletando {samples_per_genre} amostras...")
+        
+        if 'genre' in df.columns:
+            for genre in target_genres:
+                # Filtra gênero
+                df_genre = df[df['genre'] == genre]
+                
+                # Pega amostra aleatória
+                if len(df_genre) > samples_per_genre:
+                    df_genre = df_genre.sample(n=samples_per_genre, random_state=42)
+                
+                df_final = pd.concat([df_final, df_genre])
+
+        # Salvar
+        os.makedirs(self.output_dir, exist_ok=True)
+        graph_path = os.path.join(self.output_dir, filename)
+        df_final.to_csv(graph_path, index=False)
+        
+        #relatorio
+        print(f"   ✔ Arquivo do Grafo salvo em: {graph_path}")
+        print(f"   -> Nós prontos para o grafo: {len(df_final)}")
+        return graph_path
