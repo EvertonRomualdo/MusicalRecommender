@@ -34,9 +34,9 @@ class GraphService:
         # cache para não ser necessário sempre buscar do disco
         self._graph_cache = None
 
-    def run_full_etl(self, samples_per_genre=1250) -> bool:
+    def run_full_etl(self, samples_per_genre=800) -> bool:
         """
-        Executa o pipeline completo de dados:
+        Executa o etl completo de dados:
         1. Gera a base completa (songs_full.csv)
         2. Gera a base amostral (songs.csv)
         """

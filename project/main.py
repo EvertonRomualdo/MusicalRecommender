@@ -6,7 +6,7 @@ from src.services.graph_service import GraphService
 
 # Caminho raiz do projeto
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
+#7364
 
 def main():
     # Instancia o serviço
@@ -14,7 +14,8 @@ def main():
 
     try:
         print("Solicitando grafo ao serviço...")
-        G = service.get_graph(k_neighbors=10)
+        service.run_full_etl()
+        G = service.get_graph(force_rebuild=True)
 
         print(f"Sucesso! Grafo obtido com {len(G.nodes)} nós.")
     except Exception as e:
