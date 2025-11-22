@@ -1,4 +1,4 @@
-id,name,artist,genre,bpm,danceability,energy,valence,acousticness,instrumentalness
+track_id,track_name,artists,track_genre,tempo,danceability,energy,valence,acousticness,instrumentalness
 0VjIjW4GlUZAMYd2vXMi3b,Blinding Lights,The Weeknd,pop,171.005,0.514,0.73,0.334,0.00146,9.54e-05
 7MXVkk9YMctZqd1Srtv4MB,Starboy,The Weeknd;Daft Punk,pop,186.003,0.679,0.587,0.486,0.141,6.35e-06
 2l3dFxtoSMgMQVyRIUHjpz,Akhiyaan,Mitraz,pop,100.021,0.724,0.618,0.0683,0.0533,0.704
