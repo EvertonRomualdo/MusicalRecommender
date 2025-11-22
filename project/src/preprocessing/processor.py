@@ -11,8 +11,7 @@ class DataProcessor:
         self.input_path = input_path
         self.output_dir = output_dir
 
-        # Define as colunas exatas que queremos manter do original
-        # Certifique-se que seu CSV tem EXATAMENTE esses nomes
+        # Define as colunas
         self.REQUIRED_COLS = [
             'track_id',
             'track_name',
@@ -36,8 +35,6 @@ class DataProcessor:
         print("   -> Lendo CSV bruto...")
         df = pd.read_csv(self.input_path, low_memory=False)
 
-
-        # 1. Filtrar apenas as colunas essenciais
         # Verifica quais colunas da lista existem no dataframe
         cols_to_keep = [c for c in self.REQUIRED_COLS if c in df.columns]
 
@@ -47,11 +44,11 @@ class DataProcessor:
 
         df = df[cols_to_keep]
 
-        # 2. Limpeza
+        # Limpeza
         initial_len = len(df)
         df = df.dropna()
 
-        # Remove duplicatas baseadas no ID original (track_id)
+        # Remove duplicatas baseadas no ID
         if 'track_id' in df.columns:
             df = df.drop_duplicates(subset='track_id')
 

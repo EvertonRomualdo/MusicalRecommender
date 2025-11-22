@@ -4,53 +4,54 @@ from sklearn.preprocessing import MinMaxScaler
 from scipy.spatial.distance import cdist
 import os
 
+
 class GraphBuilder:
     """
     Responsável por transformar um CSV de músicas em um Grafo Direcionado (DiGraph).
     Usa K-Nearest Neighbors (K-NN) baseado na Distância Euclidiana.
     """
-    
+
     def __init__(self, csv_path):
         self.csv_path = csv_path
         self.G = nx.DiGraph()
-        self.df = None # Guardará o DataFrame carregado
-    
-    def build_graph(self, k_neighbors=50):
+        self.df = None  # Guardará o DataFrame carregado
+
+    def build_graph(self, k_neighbors=50, save_path=None):
         """
         Constrói o grafo conectando cada música às suas K mais similares.
-        
+
         Args:
             k_neighbors (int): Número de arestas saindo de cada nó (padrão: 50).
-        
+
         Returns:
             nx.DiGraph: O grafo construído.
+            :param save_path: Local para salvamento do grafo em GraphML.
         """
         print("--- [GRAFO] Iniciando construção do grafo ---")
-        
+
         if not os.path.exists(self.csv_path):
             raise FileNotFoundError(f"Arquivo não encontrado: {self.csv_path}")
-        
+
         # Carregar Dados
-        # Definimos 'id' como índice para facilitar a busca
         self.df = pd.read_csv(self.csv_path)
-        if 'id' in self.df.columns:
-            self.df.set_index('id', inplace=True)
-        
+        if 'track_id' in self.df.columns:
+            self.df.set_index('track_id', inplace=True)
+
         print(f"-> Carregadas {len(self.df)} músicas.")
 
         # Seleção de Features Numéricas para o Cálculo
-        feature_cols = ['danceability', 'energy', 'valence', 'bpm', 'acousticness', 'instrumentalness']
-        
+        feature_cols = ['danceability', 'energy', 'valence', 'tempo', 'acousticness', 'instrumentalness']
+
         # Filtra apenas colunas que existem (segurança)
         cols_presentes = [c for c in feature_cols if c in self.df.columns]
-        
+
         if not cols_presentes:
             raise ValueError("O dataset não contém as colunas necessárias para o cálculo!")
 
         data_numeric = self.df[cols_presentes].dropna()
 
         # NORMALIZAÇÃO (Min-Max Scaling)
-        print("-> Normalizando dados (BPM, Energy, etc)...")
+        print("-> Normalizando dados (tempo, Energy, etc)...")
         scaler = MinMaxScaler()
         data_norm = pd.DataFrame(
             scaler.fit_transform(data_numeric),
@@ -61,33 +62,67 @@ class GraphBuilder:
         # Calcula a distância euclidiana de TODOS para TODOS
         print("-> Calculando distâncias euclidianas...")
         dist_matrix = cdist(data_norm, data_norm, metric='euclidean')
-        
-        # Transformamos em DataFrame para facilitar a consulta por ID
+
+        # Transformamos em DataFrame para facilitar a consulta por track_id
         df_dist = pd.DataFrame(dist_matrix, index=data_numeric.index, columns=data_numeric.index)
 
         #Criação dos Nós e Arestas
         print(f"-> Criando arestas (K={k_neighbors})...")
-        
+
         count = 0
         total = len(data_numeric)
-        
+
         for song_id in data_numeric.index:
             # Adiciona o nó com metadados(Nome e Artista)
-            nome = self.df.loc[song_id].get('name', 'Unknown')
+            nome = self.df.loc[song_id].get('track_name', 'Unknown')
             artista = self.df.loc[song_id].get('artist', 'Unknown')
-            
+
             self.G.add_node(song_id, name=nome, artist=artista)
-            
+
             # Pega a linha de distâncias dessa música, ordena (ascendente) e pega os K primeiros
             vizinhos = df_dist.loc[song_id].nsmallest(k_neighbors + 1).iloc[1:]
-            
+
             for vizinho_id, distancia in vizinhos.items():
                 # Peso da aresta = Distância (Quanto menor, mais similar)
                 self.G.add_edge(song_id, vizinho_id, weight=distancia)
-            
+
             count += 1
             if count % 500 == 0:
                 print(f"   Processados {count}/{total} nós...")
 
         print(f"--- [GRAFO] Concluído! Nós: {self.G.number_of_nodes()}, Arestas: {self.G.number_of_edges()} ---")
+        # salva apos buildar
+        if save_path:
+            self.save_graph(save_path)
+
         return self.G
+
+    # Salvar o grafo em disco
+    def save_graph(self, output_path):
+        """Salva o grafo em formato padrão GraphML (.graphml)."""
+
+        #seguranca
+        if not self.G or len(self.G) == 0:
+            print("[AVISO] Grafo vazio. Nada salvo.")
+            return
+
+        print(f"-> Exportando grafo para GraphML: {output_path}")
+        try:
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            nx.write_graphml(self.G, output_path)
+            print("✔ Grafo exportado com sucesso.")
+        except Exception as e:
+            print(f"✖ Erro ao exportar grafo: {e}")
+
+    @staticmethod
+    def load_graph(input_path):
+        """Carrega um arquivo GraphML do disco."""
+        if not os.path.exists(input_path):
+            raise FileNotFoundError(f"Arquivo não encontrado: {input_path}")
+
+        print(f"-> Importando grafo de: {input_path}")
+        # A função nativa que lê e já devolve o objeto Grafo
+        G = nx.read_graphml(input_path)
+
+        print(f"✔ Grafo carregado! ({G.number_of_nodes()} nós)")
+        return G
