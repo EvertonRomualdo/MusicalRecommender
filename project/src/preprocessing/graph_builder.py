@@ -15,12 +15,12 @@ class GraphBuilder:
         self.G = nx.DiGraph()
         self.df = None # Guardará o DataFrame carregado
     
-    def build_graph(self, k_neighbors=5):
+    def build_graph(self, k_neighbors=50):
         """
         Constrói o grafo conectando cada música às suas K mais similares.
         
         Args:
-            k_neighbors (int): Número de arestas saindo de cada nó (padrão: 5).
+            k_neighbors (int): Número de arestas saindo de cada nó (padrão: 50).
         
         Returns:
             nx.DiGraph: O grafo construído.
