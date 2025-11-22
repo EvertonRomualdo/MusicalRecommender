@@ -75,7 +75,7 @@ class GraphBuilder:
         for song_id in data_numeric.index:
             # Adiciona o nó com metadados(Nome e Artista)
             nome = self.df.loc[song_id].get('track_name', 'Unknown')
-            artista = self.df.loc[song_id].get('artist', 'Unknown')
+            artista = self.df.loc[song_id].get('artists', 'Unknown')
 
             self.G.add_node(song_id, name=nome, artist=artista)
 
