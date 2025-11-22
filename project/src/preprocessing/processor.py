@@ -4,14 +4,26 @@ import os
 
 class DataProcessor:
     """
-    Processador de Dados ETL.
+    Classe responsável por processar o dataset bruto de músicas.
+    Realiza limpeza, seleção de colunas e amostragem balanceada por gênero.
+    Gera dois arquivos CSV:
+    1. songs_full.csv - Dataset completo limpo.
+    2. songs.csv - Amostra balanceada para construção do grafo.
     """
 
     def __init__(self, input_path: str, output_dir: str):
+        '''
+        Inicializa o processador com caminhos de entrada e saída para os
+        datasets gerados
+
+        :param input_path: Caminho do arquivo CSV bruto de entrada
+        :param output_dir: Diretório onde os arquivos processados serão salvos
+
+        '''
         self.input_path = input_path
         self.output_dir = output_dir
 
-        # Define as colunas
+        # Define as colunas que serão usadas no processamento
         self.REQUIRED_COLS = [
             'track_id',
             'track_name',
@@ -56,7 +68,12 @@ class DataProcessor:
         return df
 
     def process_full_dataset(self, filename='songs_full.csv'):
-        """Processa e salva TODO o dataset limpo."""
+        '''
+        Processa e salva todo o dataset limpo e com as colunas selecionadas
+        para a build do grafo.
+        :param filename: nome do arquivo para o dataset completo
+        :return: o path do dataset gerado
+        '''
         print(f"\n[ETL] Gerando Dataset COMPLETO ({filename})...")
 
         df = self._load_and_filter()
@@ -69,7 +86,13 @@ class DataProcessor:
         return full_path
 
     def process_graph_dataset(self, filename='songs.csv', samples_per_genre=800):
-        """Processa e salva uma AMOSTRA balanceada por gênero."""
+        """
+        Processa e salva uma AMOSTRA balanceada por gênero.
+
+        :param filename: Nome do arquivo de saída para o dataset do grafo
+        :param samples_per_genre: numero de amostras por gênero alvo
+        :return: o path do dataset gerado
+        """
         print(f"\n[ETL] Gerando Dataset para GRAFO ({filename})...")
 
         df = self._load_and_filter()

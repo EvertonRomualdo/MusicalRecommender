@@ -7,26 +7,28 @@ import os
 
 class GraphBuilder:
     """
-    Responsável por transformar um CSV de músicas em um Grafo Direcionado (DiGraph).
+    Responsável por transformar um CSV de músicas num Grafo Direcionado (DiGraph).
     Usa K-Nearest Neighbors (K-NN) baseado na Distância Euclidiana.
     """
 
     def __init__(self, csv_path):
+        '''
+        Inicializa o construtor de grafo com o caminho do dataset que deve ser usado
+        :param csv_path: o path do dataset CSV de músicas processado
+        '''
         self.csv_path = csv_path
         self.G = nx.DiGraph()
         self.df = None  # Guardará o DataFrame carregado
 
     def build_graph(self, k_neighbors=50, save_path=None):
-        """
-        Constrói o grafo conectando cada música às suas K mais similares.
+        '''
+        Constrói o grafo a partir do CSV fornecido no construtor.
+        Usa K-NN baseado na Distância Euclidiana entre features numéricas.
 
-        Args:
-            k_neighbors (int): Número de arestas saindo de cada nó (padrão: 50).
-
-        Returns:
-            nx.DiGraph: O grafo construído.
-            :param save_path: Local para salvamento do grafo em GraphML.
-        """
+        :param k_neighbors: numero de vizinhos a considerar para cada nó
+        :param save_path: path opcional para salvar o grafo em GraphML após construção
+        :return:
+        '''
         print("--- [GRAFO] Iniciando construção do grafo ---")
 
         if not os.path.exists(self.csv_path):
@@ -99,7 +101,11 @@ class GraphBuilder:
 
     # Salvar o grafo em disco
     def save_graph(self, output_path):
-        """Salva o grafo em formato padrão GraphML (.graphml)."""
+        '''
+        Salva o grafo em formato padrão GraphML (.graphml).
+        :param output_path: Path completo do arquivo de saída
+        :return: NONE
+        '''
 
         #seguranca
         if not self.G or len(self.G) == 0:
@@ -116,7 +122,12 @@ class GraphBuilder:
 
     @staticmethod
     def load_graph(input_path):
-        """Carrega um arquivo GraphML do disco."""
+        """
+        Carrega um arquivo GraphML do disco.
+
+        :param input_path: Path completo do arquivo GraphML
+        :return: Um grafo NetworkX DiGraph
+        """
         if not os.path.exists(input_path):
             raise FileNotFoundError(f"Arquivo não encontrado: {input_path}")
 
