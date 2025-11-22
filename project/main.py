@@ -15,6 +15,7 @@ sys.path.append(current_dir)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 RAW_PATH = os.path.join(BASE_DIR, 'data', 'raw', 'dataset.csv')
 PROCESSED_PATH = os.path.join(BASE_DIR, 'data', 'processed', 'songs.csv')
+FILE_GRAPH_OBJ = 'graph.graphml'
 
 # --- UTILITÁRIOS DE UI ---
 class Colors:
@@ -71,24 +72,33 @@ def run_build_graph():
         print("Execute a opção de ETL primeiro.")
         return
 
+    # Definimos onde o arquivo GraphML será salvo
+    path_graph_output = os.path.join(os.path.dirname(PROCESSED_PATH), FILE_GRAPH_OBJ)
+
+    # Verifica se já existe para oferecer carregamento rápido
+    if os.path.exists(path_graph_output):
+        print(f"{Colors.BLUE}Encontrei um grafo salvo em disco!{Colors.END}")
+        opt = input("Deseja carregar o existente (S) ou recriar (N)? ").strip().lower()
+        if opt == 's':
+            try:
+                # Carregamento Rápido
+                G = GraphBuilder.load_graph(path_graph_output)
+                print(f"\n{Colors.GREEN}✔ Grafo Carregado do Disco!{Colors.END}")
+                return  # Sai da função pois já temos o grafo
+            except Exception as e:
+                print(f"Erro ao carregar: {e}. Vamos recriar...")
+
     try:
         print("Carregando dados e montando arestas...")
         builder = GraphBuilder(PROCESSED_PATH)
-        
-        # K=50 é o padrão
-        G = builder.build_graph(k_neighbors=50)
-        
-        # Mostra estatísticas simples para confirmar que funcionou
-        print(f"\n{Colors.GREEN}✔ Grafo Construído na Memória!{Colors.END}")
+
+        # AQUI ESTÁ A MUDANÇA: Passamos o save_path
+        G = builder.build_graph(k_neighbors=5, save_path=path_graph_output)
+
+        print(f"\n{Colors.GREEN}✔ Grafo Construído e Salvo em: {FILE_GRAPH_OBJ}{Colors.END}")
         print(f"   -> Total de Nós (Músicas): {G.number_of_nodes()}")
         print(f"   -> Total de Arestas (Conexões): {G.number_of_edges()}")
-        #5536 músicas.
-        # Opcional: Mostrar um exemplo
-        if len(G) > 0:
-            import random
-            node = random.choice(list(G.nodes))
-            print(f"\nExemplo aleatório: Nó {node} tem {len(list(G.neighbors(node)))} vizinhos.")
-            
+
     except Exception as e:
         print(f"\n{Colors.FAIL}✖ Erro ao criar grafo: {e}{Colors.END}")
 
