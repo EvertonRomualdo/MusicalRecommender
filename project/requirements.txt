@@ -1,5 +1,9 @@
+spotipy
 pandas
+networkx
 numpy
 scikit-learn
-scipy
-networkx
+matplotlib
+pytest
+pytest-cov
+pylint
