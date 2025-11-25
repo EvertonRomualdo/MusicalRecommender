@@ -1,43 +1,106 @@
 import os
 import sys
 
-
 from src.services.graph_service import GraphService
-from src.algorithm.search import dijkstra, mostrar_grafo #transferir mostrar_grafo para ui depois
+from src.algorithm.search import dijkstra   # mostrar_grafo ignorado
+
 
 # Caminho raiz do projeto
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-#7364
+
+
+def buscar_no_por_nome_parcial(G, termo):
+    """
+    Busca parcial simples:
+    - converte tudo para minúsculo
+    - procura substring no nome da música
+    - se não encontrar nada, procura no artista
+    - se ainda assim não achar, retorna None
+    """
+    termo = termo.lower()
+
+    candidatos = []
+
+    for node_id, data in G.nodes(data=True):
+        nome = data.get("name", "").lower()
+        artista = data.get("artist", "").lower()
+
+        if termo in nome or termo in artista:
+            candidatos.append((node_id, data))
+
+    if not candidatos:
+        return None
+
+    # critério simples: pega o mais curto (nome mais próximo)
+    candidatos.sort(key=lambda x: len(x[1].get("name", "")))
+
+    return candidatos[0][0]   # retorna só o 
+
+def formatar_musica(G, node_id):
+    """
+    Retorna 'NOME — ARTISTA' dado o ID da música.
+    Se não existir, retorna o próprio ID.
+    """
+    data = G.nodes[node_id]
+    nome = data.get("name", "??")
+    artista = data.get("artist", "??")
+    return f"{nome} — {artista}"
+
+
 
 def main():
-    # Instancia o serviço
+    print("🔄 Carregando grafo, aguarde...")
+
     service = GraphService(root_dir=BASE_DIR)
-    
 
     try:
-        print("Solicitando grafo ao serviço...")
         service.run_full_etl()
         G = service.get_graph(force_rebuild=True)
 
-        print(f"Sucesso! Grafo obtido com {len(G.nodes)} nós.")
+        print(f"✔ Grafo carregado com {len(G.nodes)} músicas.\n")
 
-        origem = "0VjIjW4GlUZAMYd2vXMi3b"   
-        destino = "57jOEZtoLQK4zF2x55bdkp"    
+        # --------------------------
+        # Interface do Usuário (CLI)
+        # --------------------------
 
-        print(f"\nCalculando menor caminho entre {origem} → {destino} ...")
-        path, dist = dijkstra(G, origem, destino)
+        while True:
+            print("🎵  BUSCA DE MÚSICAS (digite parte do nome ou artista)")
+            termo_origem = input(" → Música de ORIGEM: ").strip()
 
-        if path is None:
-            print("Nenhum caminho encontrado!")
-        else:
-            print(f"\nCaminho encontrado ({len(path)} passos):")
-            print(path)
-            print(f"\nDistância total: {dist:.4f}")
+            origem = buscar_no_por_nome_parcial(G, termo_origem)
+            if origem is None:
+                print("❌ Nenhuma música encontrada! Tente novamente.\n")
+                continue
 
-            mostrar_grafo(G, path=path)
+            termo_destino = input(" → Música de DESTINO: ").strip()
+
+            destino = buscar_no_por_nome_parcial(G, termo_destino)
+            if destino is None:
+                print("❌ Nenhuma música encontrada! Tente novamente.\n")
+                continue
+
+            print(f"\nCalculando menor caminho entre:")
+            print(f"   Origem : {formatar_musica(G, origem)}")
+            print(f"   Destino: {formatar_musica(G, destino)}")
+
+
+
+            path, dist = dijkstra(G, origem, destino)
+
+            if path is None:
+                print("❌ Nenhum caminho encontrado!\n")
+            else:
+                print(f"✔ Caminho encontrado ({len(path)} passos):")
+                print("\n".join(f" → {formatar_musica(G, node)}" for node in path))
+                print(f"🎯 Distância total: {dist:.4f}\n")
+
+            print("-" * 60)
+            again = input("Deseja buscar outro caminho? (s/n): ").strip().lower()
+            if again != "s":
+                break
 
     except Exception as e:
-        print(f"Erro: {e}")
+        print(f"💥 Erro: {e}")
 
 
 if __name__ == "__main__":
