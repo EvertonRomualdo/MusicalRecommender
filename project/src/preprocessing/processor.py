@@ -64,6 +64,9 @@ class DataProcessor:
         if 'track_id' in df.columns:
             df = df.drop_duplicates(subset='track_id')
 
+        if 'track_name' in df.columns and 'artists' in df.columns:
+            df = df.drop_duplicates(subset=['track_name', 'artists'])
+
         print(f"   -> Limpeza: {initial_len} linhas -> {len(df)} linhas válidas.")
         return df
 
