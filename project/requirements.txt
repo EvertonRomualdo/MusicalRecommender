@@ -7,3 +7,4 @@ matplotlib
 pytest
 pytest-cov
 pylint
+inquirer
