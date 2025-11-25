@@ -1,7 +1,7 @@
 import os
 import networkx as nx
-from project.src.preprocessing.graph_builder import GraphBuilder
-from project.src.preprocessing.processor import DataProcessor
+from src.preprocessing.graph_builder import GraphBuilder
+from src.preprocessing.processor import DataProcessor
 
 
 class GraphService:
