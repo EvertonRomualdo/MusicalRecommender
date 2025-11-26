@@ -29,5 +29,10 @@ Navegue até a pasta do projeto e rode o arquivo principal:
 py project/main.py
 ```
 
+6. **Executar Testes**
+
+```Bash
+   pytest --cov=tests --cov-report=term-missing -v
+```
 
 *Desenvolvido para a disciplina de Grafos/IA.*
