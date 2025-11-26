@@ -5,9 +5,6 @@ import pytest
 import networkx as nx
 from src.preprocessing.graph_builder import GraphBuilder
 
-# -------------------------
-# FUNÇÕES DE SUPORTE
-# -------------------------
 def create_sample_csv(tmp_path, subset=None):
     """Cria um CSV de teste temporário com dados de músicas"""
     data = {
@@ -28,9 +25,6 @@ def create_sample_csv(tmp_path, subset=None):
     df.to_csv(csv_file, index=False)
     return csv_file
 
-# -------------------------
-# TESTES PRINCIPAIS
-# -------------------------
 def test_graph_correct(tmp_path):
     """Grafo construído corretamente"""
     csv_file = create_sample_csv(tmp_path)
@@ -141,9 +135,6 @@ def test_save_and_load(tmp_path):
     assert G_loaded.number_of_edges() == G.number_of_edges()
 
 
-# -------------------------
-# TESTES EXTRAS PARA COBRIR LINHAS FALTANTES
-# -------------------------
 def test_build_graph_missing_csv(tmp_path):
     """Testa FileNotFoundError se CSV não existir"""
     missing_path = os.path.join(tmp_path, "nao_existe.csv")
@@ -223,27 +214,23 @@ def test_build_graph_with_save_path(tmp_path):
     save_path = os.path.join(tmp_path, "saved_graph.graphml")
     G = builder.build_graph(k_neighbors=2, save_path=save_path)
 
-    # Confirma grafo criado corretamente
     assert isinstance(G, nx.DiGraph)
     assert G.number_of_nodes() == 4
-    # Confirma arquivo salvo
+
     assert os.path.exists(save_path)
 
 
 def test_build_graph_k_neighbors_greater_than_nodes(tmp_path):
     """Testa comportamento quando k_neighbors é maior que o número de nós disponíveis"""
-    # Apenas 2 músicas
+
     csv_file = create_sample_csv(tmp_path, subset=[0, 1])
     builder = GraphBuilder(csv_file)
 
-    # k_neighbors > número de músicas
     G = builder.build_graph(k_neighbors=5)
 
-    # Converte todos os nós para string para comparar corretamente
     nodes_as_str = set(map(str, G.nodes))
     assert nodes_as_str == {"1", "2"}
 
-    # Confirma arestas criadas corretamente (cada nó terá 1 vizinho apenas)
     for node in G.nodes:
         assert len(G.edges(node)) == 1
         for _, _, data in G.edges(node, data=True):
