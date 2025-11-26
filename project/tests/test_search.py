@@ -1,7 +1,7 @@
 # test_graph_algorithms.py
 import pytest
 import networkx as nx
-from src.algorithm.search import dijkstra, mostrar_grafo  # substitua pelo nome do arquivo sem .py
+from src.algorithm.search import dijkstra, mostrar_grafo
 
 def create_test_graph():
     G = nx.Graph()
@@ -42,7 +42,6 @@ def test_dijkstra_no_path():
 def test_mostrar_grafo_with_path(monkeypatch):
     G = create_test_graph()
     path, _ = dijkstra(G, "A", "Q")
-    # Para evitar abrir a janela de plot durante teste, podemos "monkeypatch" plt.show
     monkeypatch.setattr("matplotlib.pyplot.show", lambda: None)
     mostrar_grafo(G, path)
 
@@ -52,7 +51,6 @@ def test_mostrar_grafo_without_path(monkeypatch):
     mostrar_grafo(G)
 
 def test_dijkstra_path_and_no_path():
-    # Grafo com caminho
     G = nx.Graph()
     G.add_edge("A", "B", weight=1)
     G.add_edge("B", "C", weight=2)
@@ -60,7 +58,6 @@ def test_dijkstra_path_and_no_path():
     assert path == ["A", "B", "C"]
     assert cost == 3
 
-    # Grafo sem caminho
     G = nx.Graph()
     G.add_nodes_from(["X", "Y"])
     path, cost = dijkstra(G, "X", "Y")
