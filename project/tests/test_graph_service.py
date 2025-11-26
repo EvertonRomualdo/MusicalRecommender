@@ -92,9 +92,6 @@ def test_get_graph_missing_csv(tmp_path):
     with pytest.raises(FileNotFoundError):
         service.get_graph()
 
-
-# -------- NOVOS TESTES PARA 100% DE COBERTURA --------
-
 @patch("src.services.graph_service.GraphBuilder")
 def test_force_rebuild(mock_builder, tmp_path):
     service = GraphService(str(tmp_path))
@@ -146,14 +143,12 @@ def test_graph_service_corrupted_graph(tmp_path, monkeypatch):
     Isso cobre as linhas 71-73 do graph_service.
     """
 
-    # --- 1. Criar estrutura de diretórios do serviço ---
     root = tmp_path
     raw_dir = root / "data" / "raw"
     processed_dir = root / "data" / "processed"
     raw_dir.mkdir(parents=True, exist_ok=True)
     processed_dir.mkdir(parents=True, exist_ok=True)
 
-    # Criar dataset mínimo válido para construção do grafo
     csv_path = raw_dir / "dataset.csv"
     csv_path.write_text(
         "track_id,track_name,artists,danceability,energy,valence,tempo,acousticness,instrumentalness\n"
@@ -161,16 +156,13 @@ def test_graph_service_corrupted_graph(tmp_path, monkeypatch):
         "2,C,D,0.6,0.5,0.6,130,0.2,0.0\n"
     )
 
-    # --- 2. Rodar ETL para gerar songs.csv ---
     from src.services.graph_service import GraphService
     service = GraphService(str(root))
     service.run_full_etl(samples_per_genre=1)
 
-    # --- 3. Criar arquivo de grafo corrompido ---
     corrupted_graph_path = processed_dir / "graph.graphml"
     corrupted_graph_path.write_text("isso não é um grafo válido")
 
-    # --- 4. Monkeypatch para forçar erro no load_graph ---
     def fake_load_graph(path):
         raise ValueError("arquivo inválido")
 
@@ -179,7 +171,6 @@ def test_graph_service_corrupted_graph(tmp_path, monkeypatch):
         fake_load_graph
     )
 
-    # --- 5. Agora chamar get_graph deve capturar o erro e recriar o grafo ---
     G = service.get_graph(k_neighbors=1, force_rebuild=False)
 
     assert G is not None
@@ -193,16 +184,13 @@ def test_run_full_etl_raises_exception(mock_dp, tmp_path):
     """
     service = GraphService(str(tmp_path))
 
-    # Criar diretório raw e arquivo de entrada para não disparar FileNotFoundError
     os.makedirs(service.dirs["raw"], exist_ok=True)
     with open(service.files["input_raw"], "w") as f:
         f.write("track_id,track_name\n1,A")
 
-    # Configurar o mock para levantar exceção ao processar o dataset completo
     instance = mock_dp.return_value
     instance.process_full_dataset.side_effect = Exception("erro crítico")
 
-    # Rodar o ETL e capturar retorno
     result = service.run_full_etl(samples_per_genre=10)
 
     assert result is False
