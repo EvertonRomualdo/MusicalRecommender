@@ -13,10 +13,6 @@ from main import (
     main,
 )
 
-# ---------------------------------------------------------
-# TESTES: buscar_musicas
-# ---------------------------------------------------------
-
 def test_buscar_musicas_basic():
     G = nx.DiGraph()
     G.add_node(1, name="Love Song", artist="Adele")
@@ -25,7 +21,7 @@ def test_buscar_musicas_basic():
     result = buscar_musicas(G, "love")
 
     assert len(result) == 2
-    assert result[0][2] >= result[1][2]  # score desc
+    assert result[0][2] >= result[1][2]
 
 
 def test_buscar_musicas_empty_term():
@@ -34,10 +30,6 @@ def test_buscar_musicas_empty_term():
 
     assert buscar_musicas(G, "") == []
 
-
-# ---------------------------------------------------------
-# TESTES: formatar_musica
-# ---------------------------------------------------------
 
 def test_formatar_musica_known():
     G = nx.DiGraph()
@@ -51,18 +43,14 @@ def test_formatar_musica_unknown():
     assert formatar_musica(G, 999) == "[ID desconhecido: 999]"
 
 
-# ---------------------------------------------------------
-# TESTES: listar_e_selecionar_musica
-# ---------------------------------------------------------
-
 @patch("builtins.input")
 def test_listar_e_selecionar_musica_select_first(mock_input):
     G = nx.DiGraph()
     G.add_node(10, name="Hello", artist="Adele")
 
     mock_input.side_effect = [
-        "hel",   # termo de busca
-        "1"      # seleção
+        "hel",
+        "1"
     ]
 
     node = listar_e_selecionar_musica(G, "ORIGEM")
@@ -75,10 +63,6 @@ def test_listar_e_selecionar_musica_cancel(mock_input):
     G = nx.DiGraph()
     assert listar_e_selecionar_musica(G, "ORIGEM") is None
 
-
-# ---------------------------------------------------------
-# TESTES: processar_busca_caminho
-# ---------------------------------------------------------
 
 @patch("main.dijkstra")
 def test_processar_busca_caminho_ok(mock_dijkstra, capsys):
@@ -119,18 +103,10 @@ def test_processar_busca_caminho_same_node(capsys):
     assert "Origem e destino são a mesma música" in out
 
 
-# ---------------------------------------------------------
-# TESTES: menu_principal
-# ---------------------------------------------------------
-
 @patch("builtins.input", return_value="1")
 def test_menu_principal(mock_input):
     assert menu_principal() == "1"
 
-
-# ---------------------------------------------------------
-# TESTES: executar_interface
-# ---------------------------------------------------------
 
 @patch("builtins.input")
 def test_executar_interface_exit(mock_input, capsys):
@@ -142,10 +118,6 @@ def test_executar_interface_exit(mock_input, capsys):
     out = capsys.readouterr().out
     assert "Até logo" in out
 
-
-# ---------------------------------------------------------
-# TESTES: main
-# ---------------------------------------------------------
 
 @patch("main.executar_interface")
 @patch("main.GraphService")
